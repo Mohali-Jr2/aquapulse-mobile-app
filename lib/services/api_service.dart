@@ -13,7 +13,7 @@ import '../models/notification_model.dart';
 class ApiService {
 
   static const String baseUrl =
-      'http://192.168.1.78:8000/api';
+      'http://192.168.235.5:8000/api';
 
   // MOBILE REGISTER
   Future<Map<String, dynamic>> mobileRegister({
@@ -96,8 +96,6 @@ class ApiService {
       'meter_code': data['meter_code'] ?? '',
 
       'location': data['location'] ?? '',
-
-      'meters': data['meters'] ?? [],
 
       'data': data,
     };
@@ -451,21 +449,17 @@ Future<BillModel> fetchCurrentBill(String meterCode) async {
     required String amount,
     required String phoneNumber,
   }) async {
-    final response = await http
-        .post(
-          Uri.parse('$baseUrl/momo/mtn/request-to-pay/'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'bill_id': billId,
-            'amount': amount,
-            'phone_number': phoneNumber,
-          }),
-        )
-        .timeout(const Duration(seconds: 35));
+    final response = await http.post(
+      Uri.parse('$baseUrl/momo/mtn/request-to-pay/'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'bill_id': billId,
+        'amount': amount,
+        'phone_number': phoneNumber,
+      }),
+    );
 
-    final data = response.body.isNotEmpty
-        ? jsonDecode(response.body) as Map<String, dynamic>
-        : <String, dynamic>{'error': 'The payment server returned no response.'};
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
     return {
       'success': response.statusCode == 202,
       'data': data,
@@ -475,14 +469,10 @@ Future<BillModel> fetchCurrentBill(String meterCode) async {
   Future<Map<String, dynamic>> fetchMtnPaymentStatus(
     String referenceId,
   ) async {
-    final response = await http
-        .get(
-          Uri.parse('$baseUrl/momo/mtn/status/$referenceId/'),
-        )
-        .timeout(const Duration(seconds: 35));
-    final data = response.body.isNotEmpty
-        ? jsonDecode(response.body) as Map<String, dynamic>
-        : <String, dynamic>{'error': 'The payment server returned no response.'};
+    final response = await http.get(
+      Uri.parse('$baseUrl/momo/mtn/status/$referenceId/'),
+    );
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
     return {
       'success': response.statusCode == 200,
       'data': data,
