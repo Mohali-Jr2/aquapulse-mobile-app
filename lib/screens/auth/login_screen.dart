@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
 
 import '../../core/constants/app_colors.dart';
 import '../../services/api_service.dart';
@@ -87,6 +88,11 @@ class _LoginScreenState
   await prefs.setString(
     'phone_number',
     phoneController.text.trim(),
+  );
+
+  await prefs.setString(
+    'meters',
+    jsonEncode(result['meters'] ?? []),
   );
 
   if (!mounted) return;

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 import '../../core/constants/app_colors.dart';
 import '../../models/meter_model.dart';
 import '../../services/api_service.dart';
 import '../auth/login_screen.dart';
+import '../home/main_shell.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -19,6 +21,7 @@ class _ProfileScreenState
 
   String fullName = '';
   String meterCode = '';
+  List<Map<String, dynamic>> meters = [];
 
   @override
   void initState() {
@@ -31,14 +34,91 @@ class _ProfileScreenState
     final prefs =
         await SharedPreferences.getInstance();
 
-    setState(() {
+    final storedMeters = prefs.getString('meters');
+    final decodedMeters = storedMeters == null
+        ? <dynamic>[]
+        : jsonDecode(storedMeters) as List<dynamic>;
 
+    setState(() {
       fullName =
           prefs.getString('full_name') ?? '';
 
       meterCode =
           prefs.getString('meter_code') ?? '';
+
+      meters = decodedMeters
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList();
     });
+  }
+
+  Future<void> switchMeter() async {
+    if (meters.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No additional meters are available.')),
+      );
+      return;
+    }
+
+    final selected = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+            children: [
+              const Text(
+                'Select Meter',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 12),
+              ...meters.map((item) {
+                final code = (item['meter_code'] ?? '').toString();
+                final selectedMeter = code == meterCode;
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                  leading: CircleAvatar(
+                    backgroundColor: selectedMeter
+                        ? AppColors.mint
+                        : AppColors.blue,
+                    child: const Icon(Icons.speed, color: Colors.white),
+                  ),
+                  title: Text(
+                    code,
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                  subtitle: Text(
+                    '${item['location'] ?? 'Unknown location'} • '
+                    '${item['status'] ?? 'Unknown'}',
+                  ),
+                  trailing: selectedMeter
+                      ? const Icon(Icons.check_circle, color: AppColors.mint)
+                      : const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(sheetContext).pop(item),
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selected == null || !mounted) return;
+    final selectedCode = (selected['meter_code'] ?? '').toString();
+    if (selectedCode.isEmpty || selectedCode == meterCode) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('meter_code', selectedCode);
+    if (!mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const MainShell()),
+      (route) => false,
+    );
   }
 
   Future<void> showMeterInfo() async {
@@ -405,6 +485,15 @@ class _ProfileScreenState
 
   showMeterInfo,
 ),
+
+            if (meters.length > 1)
+              option(
+                context,
+                Icons.swap_horiz_rounded,
+                'Switch Meter',
+                '${meters.length} meters linked to this account',
+                switchMeter,
+              ),
 
             option(
 

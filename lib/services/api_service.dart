@@ -97,6 +97,8 @@ class ApiService {
 
       'location': data['location'] ?? '',
 
+      'meters': data['meters'] ?? [],
+
       'data': data,
     };
   }
