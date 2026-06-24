@@ -13,7 +13,10 @@ import '../models/notification_model.dart';
 class ApiService {
 
   static const String baseUrl =
-      'http://192.168.235.5:8000/api';
+      String.fromEnvironment(
+        'API_BASE_URL',
+        defaultValue: 'http://192.168.5.114:8000/api',
+      );
 
   // MOBILE REGISTER
   Future<Map<String, dynamic>> mobileRegister({
